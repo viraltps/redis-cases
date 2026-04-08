@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SB Inbox – Real-Time Update Test Cases v2</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,sans-serif;font-size:13px;background:#f8fafc;min-height:100vh;padding:20px}
+  h1{font-size:20px;font-weight:700;color:#1e293b}
+  .subtitle{color:#64748b;font-size:12px;margin:4px 0 0}
+  .summary{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .pill{padding:3px 12px;border-radius:999px;font-size:12px;font-weight:600}
+  .pill-total{background:#1e293b;color:#fff}
+  .pill-not{background:#f1f5f9;color:#475569}
+  .pill-pass{background:#dcfce7;color:#15803d}
+  .pill-fail{background:#fee2e2;color:#b91c1c}
+  .pill-progress{background:#fef9c3;color:#854d0e}
+  .pill-blocked{background:#ffedd5;color:#c2410c}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .filters input,.filters select{padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:12px;outline:none}
+  .filters input:focus,.filters select:focus{border-color:#3b82f6}
+  .card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead tr{background:#f1f5f9}
+  th{padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+  tbody tr.main-row{border-bottom:1px solid #f1f5f9}
+  tbody tr.main-row:nth-child(4n+1){background:#fff}
+  tbody tr.main-row:nth-child(4n+3){background:#f8fafc}
+  tbody tr.main-row.new-tc{background:#fff8f0 !important}
+  tbody tr.main-row.updated-tc{background:#f0f9ff !important}
+  td{padding:8px 12px;vertical-align:middle}
+  .tc-id{font-weight:700;color:#3b82f6;white-space:nowrap;font-size:12px}
+  .tc-id.new{color:#ea580c}
+  .tc-section{color:#64748b;font-size:11px}
+  .tc-title{color:#1e293b;font-weight:500}
+  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+  .badge-new{background:#ffedd5;color:#c2410c}
+  .badge-updated{background:#dbeafe;color:#1d4ed8}
+  .badge-critical{background:#fee2e2;color:#b91c1c}
+  .status-select{padding:3px 7px;border-radius:5px;border:1px solid #e2e8f0;font-size:11px;font-weight:600;cursor:pointer;outline:none}
+  .s-not{background:#f1f5f9;color:#475569}
+  .s-progress{background:#fef9c3;color:#854d0e}
+  .s-pass{background:#dcfce7;color:#15803d}
+  .s-fail{background:#fee2e2;color:#b91c1c}
+  .s-blocked{background:#ffedd5;color:#c2410c}
+  .btn-detail{padding:3px 10px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:11px;cursor:pointer;font-weight:600}
+  .btn-detail.open{background:#1e293b;color:#fff;border-color:#1e293b}
+  .detail-row{background:#f0f9ff;border-bottom:1px solid #e2e8f0;display:none}
+  .detail-row.new-detail{background:#fff8f0}
+  .detail-row.visible{display:table-row}
+  .detail-inner{padding:12px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .detail-label{font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px}
+  .detail-val{font-size:12px;color:#475569;white-space:pre-line;line-height:1.6}
+  .change-note{font-size:11px;color:#1d4ed8;background:#dbeafe;border-radius:4px;padding:4px 8px;margin-top:6px;display:inline-block}
+  .new-note{font-size:11px;color:#c2410c;background:#ffedd5;border-radius:4px;padding:4px 8px;margin-top:6px;display:inline-block}
+  .no-results{padding:32px;text-align:center;color:#94a3b8}
+  .footer{color:#94a3b8;font-size:11px;margin-top:10px;text-align:right}
+  .top-row{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+  .btn-group{display:flex;gap:8px}
+  .export-btn{padding:6px 14px;border-radius:6px;border:none;background:#1e293b;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+  .export-btn:hover{background:#334155}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center;font-size:11px;color:#64748b}
+  .legend span{display:flex;align-items:center;gap:4px}
+  @media(max-width:700px){.detail-inner{grid-template-columns:1fr}.filters{flex-direction:column}}
+</style>
+</head>
+<body>
+<div style="max-width:1100px;margin:0 auto">
+  <div class="top-row">
+    <div>
+      <h1>SB Inbox – Real-Time Update Test Cases <span style="font-size:13px;background:#1e293b;color:#fff;border-radius:4px;padding:2px 8px;font-weight:600;vertical-align:middle">v2</span></h1>
+      <p class="subtitle">56 active scenarios · 23 original sections + Redis Streams offline sync coverage · Updated per ticket gap analysis</p>
+    </div>
+    <div class="btn-group">
+      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <strong>Legend:</strong>
+    <span><span class="badge badge-new">NEW</span> Newly added</span>
+    <span><span class="badge badge-updated">UPDATED</span> Modified from v1</span>
+    <span><span class="badge badge-critical">CRITICAL</span> High priority for this ticket</span>
+    <span style="background:#fff8f0;border:1px solid #fed7aa;border-radius:4px;padding:2px 8px;">🟠 Orange row = new TC</span>
+    <span style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:2px 8px;">🔵 Blue row = updated TC</span>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="filters">
+    <input type="text" id="search" placeholder="Search by ID or title..." oninput="renderTable()" style="width:220px"/>
+    <select id="filterSection" onchange="renderTable()"><option value="All">All Sections</option></select>
+    <select id="filterStatus" onchange="renderTable()">
+      <option value="All">All Statuses</option>
+      <option>Not Tested</option><option>In Progress</option><option>Pass</option><option>Fail</option><option>Blocked</option>
+    </select>
+    <select id="filterTag" onchange="renderTable()">
+      <option value="All">All Tags</option>
+      <option value="new">New Only</option>
+      <option value="updated">Updated Only</option>
+      <option value="critical">Critical Only</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <table id="testTable">
+      <thead><tr><th>ID</th><th>Section</th><th>Test Title</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="no-results" id="noResults" style="display:none">No test cases match your filters.</div>
+  </div>
+  <p class="footer">Status changes saved in browser localStorage. v2 – updated per Redis Streams offline sync ticket.</p>
+</div>
+
+<script>
+const TC = [
+  // ── SECTION 1 ──
+  {id:"TC-01",section:"1. Act on Same Alert",title:"Same alert – Different users",priority:"High",tag:"",pre:"User-A logged in Browser-A, User-B logged in Browser-B. Both viewing the same alert in Inbox.",steps:"1. User-A right-clicks an alert and performs an action (e.g., Mute).\n2. Observe Browser-B (User-B) without refreshing.",expected:"Browser-B reflects the updated alert state in real time without a manual refresh.",change:""},
+  {id:"TC-02",section:"1. Act on Same Alert",title:"Same alert – Same user, different browser",priority:"High",tag:"",pre:"User-A logged in on both Browser-A and Browser-B. Both viewing the same alert.",steps:"1. User-A performs an action on the alert in Browser-A.\n2. Observe Browser-B without refreshing.",expected:"Browser-B reflects the updated alert state in real time without a manual refresh.",change:""},
+  // ── SECTION 2 ──
+  {id:"TC-03",section:"2. Idle Mode Test",title:"Idle mode – Different user",priority:"Medium",tag:"",pre:"User-A in Browser-A is idle (no interaction). User-B is active in Browser-B.",steps:"1. Leave Browser-A idle.\n2. User-B performs an action on an alert in Browser-B.\n3. Observe Browser-A after a few seconds.",expected:"Browser-A receives and displays the update without user interaction or refresh.",change:""},
+  {id:"TC-04",section:"2. Idle Mode Test",title:"Idle mode – Same user",priority:"Medium",tag:"",pre:"User-A logged in on Browser-A (idle) and Browser-B (active).",steps:"1. Leave Browser-A idle.\n2. Perform an action in Browser-B.\n3. Observe Browser-A.",expected:"Browser-A receives and displays the update without user interaction or refresh.",change:""},
+  // ── SECTION 3 ──
+  {id:"TC-05",section:"3. Logout Case",title:"Logout – Different user",priority:"High",tag:"",pre:"User-A logged in on Browser-A. User-B logged in on Browser-B.",steps:"1. Log out User-A from Browser-A.\n2. User-B performs actions on alerts in Browser-B.\n3. Re-login as User-A in Browser-A.\n4. Observe inbox state.",expected:"After re-login, User-A's inbox reflects all actions performed by User-B during the logout period.",change:""},
+  {id:"TC-06",section:"3. Logout Case",title:"Logout – Same user",priority:"High",tag:"",pre:"User-A logged in on Browser-A and Browser-B.",steps:"1. Log out User-A from Browser-A.\n2. Perform actions as User-A in Browser-B.\n3. Re-login as User-A in Browser-A.\n4. Observe inbox state.",expected:"After re-login, Browser-A inbox reflects all actions performed in Browser-B during logout.",change:""},
+  // ── SECTION 4 ──
+  {id:"TC-07",section:"4. Close Browser",title:"Close browser – cross-user update check",priority:"Medium",tag:"",pre:"User-A logged in and Browser-A is closed (session still valid). User-B active in Browser-B.",steps:"1. Close Browser-A (do not log out).\n2. User-B performs actions on one/multiple alerts in Browser-B.\n3. Reopen Browser-A and log in as User-A.\n4. Observe inbox.",expected:"User-A sees the latest updated state reflecting all actions done by User-B.",change:""},
+  // ── SECTION 5 ──
+  {id:"TC-08",section:"5. Multi-Tab – Same Browser",title:"Multi-tab – Manual logout",priority:"Medium",tag:"",pre:"User-A logged in across multiple tabs in the same browser.",steps:"1. Manually log out from one tab.\n2. Observe all other open tabs.",expected:"All tabs reflect the logout — real-time feed stops and re-login prompt is shown across all tabs.",change:""},
+  {id:"TC-09",section:"5. Multi-Tab – Same Browser",title:"Multi-tab – Session expiry",priority:"Medium",tag:"",pre:"User-A logged in across multiple tabs in the same browser. Session TTL is short or can be forced.",steps:"1. Let session expire (or force expire).\n2. Observe all open tabs.",expected:"All tabs stop receiving real-time updates and display a session expired / re-login prompt.",change:""},
+  // ── SECTION 6 ──
+  {id:"TC-10",section:"6. Internet Availability",title:"No internet – No updates received",priority:"High",tag:"",pre:"User-A active in Browser-A. Internet can be toggled off.",steps:"1. Disconnect internet on User-A's machine.\n2. User-B performs actions in Browser-B.\n3. Observe Browser-A.",expected:"User-A receives no updates. No partial or broken data appears in the inbox.",change:""},
+  {id:"TC-11",section:"6. Internet Availability",title:"Internet restored – Updates received (filter gap check)",priority:"Critical",tag:"updated",pre:"User-A was offline. Multiple updates occurred during downtime including closed and categorized tasks. User-A has showClosed=false filter active.",steps:"1. Restore internet on User-A's machine.\n2. Observe Browser-A inbox.\n3. Specifically verify that tasks closed or categorized during offline are reflected correctly.\n4. Verify that sync/pull filters (showClosed=false, permissions) do NOT silently exclude missed events that were replayed via Redis Streams.",expected:"Inbox syncs to the latest server state. Missed events replayed via Redis Streams are NOT excluded by active sync/pull filters. Closed/categorized tasks appear correctly per their actual state.",change:"Updated: Added explicit filter gap check. Ticket root cause states sync/pull filters (showClosed=false, permissions) may exclude relevant updates — Redis Stream replay must bypass this."},
+  // ── SECTION 7 ──
+  {id:"TC-12",section:"7. Redis Failover / Downtime",title:"Redis server stop – fallback to sync/pull",priority:"Critical",tag:"updated",pre:"Multiple users active. Redis server is accessible and running.",steps:"1. Stop Redis server while users are active and updates are in-flight.\n2. Observe whether updates are dropped or queued.\n3. Attempt to reconnect a client that was offline during Redis downtime.\n4. Verify server returns full_resync_required signal.\n5. Verify client falls back to sync/pull.",expected:"Server returns full_resync_required when Redis is unavailable. Client triggers sync/pull as fallback. UI reflects correct state. No silent data loss.",change:"Updated: Added explicit full_resync_required → sync/pull fallback verification as described in ticket's Fallback section."},
+  {id:"TC-13",section:"7. Redis Failover / Downtime",title:"Redis recovery – event ID handshake & replay",priority:"Critical",tag:"updated",pre:"Redis was stopped and clients lost connection. Redis is now restarted.",steps:"1. Restart Redis server.\n2. Client reconnects and sends last received event ID to server.\n3. Verify server fetches only missed events from that event ID onwards.\n4. Verify missed events are replayed via WebSocket (not sync/pull).\n5. Verify client processes replayed events correctly.",expected:"Client sends correct last event ID on reconnect. Server fetches and replays only truly missed events from Redis Stream. No full resync needed. No duplicate events.",change:"Updated: Added event ID handshake verification — core of the proposed Redis Streams solution."},
+  {id:"TC-14",section:"7. Redis Failover / Downtime",title:"Redis recovery – no duplicate updates",priority:"Critical",tag:"",pre:"Redis was restarted after a downtime period.",steps:"1. After Redis restarts, observe all connected clients for incoming updates.\n2. Check if any update appears more than once in the UI.",expected:"No duplicate updates are pushed to any client after Redis recovery.",change:""},
+  // ── SECTION 8 ──
+  {id:"TC-15",section:"8. WebSocket Reconnection",title:"WebSocket disconnect & reconnect",priority:"High",tag:"",pre:"User-A active. DevTools available to block WS connections.",steps:"1. Block WebSocket in DevTools → Network.\n2. Wait 30 seconds (updates occur in background).\n3. Unblock WebSocket.\n4. Observe inbox.",expected:"UI shows the correct latest state after reconnect. No stale or missing data.",change:""},
+  {id:"TC-16",section:"8. WebSocket Reconnection",title:"Flapping WebSocket connection",priority:"High",tag:"",pre:"User-A active. Ability to rapidly toggle WS connection via DevTools.",steps:"1. Disconnect and reconnect WebSocket rapidly 5–10 times.\n2. Observe UI for duplicate rows, ghost updates, or freeze.",expected:"UI remains stable. No duplicate rows, ghost data, or browser freeze.",change:""},
+  {id:"TC-17",section:"8. WebSocket Reconnection",title:"Server-side WebSocket restart",priority:"High",tag:"",pre:"Multiple users active. Backend WS server can be restarted.",steps:"1. Restart the WebSocket server.\n2. Observe all connected clients.",expected:"Clients automatically reconnect without requiring a page reload.",change:""},
+  // ── SECTION 9 ──
+  {id:"TC-18",section:"9. Concurrent Action – Race Condition",title:"Two users act on same alert simultaneously",priority:"Critical",tag:"",pre:"User-A and User-B both viewing the same alert. Scripted concurrent action ready.",steps:"1. Trigger action from User-A and User-B on the same alert at the same time.\n2. Observe which action wins.\n3. Check if the losing user gets a conflict/notification message.",expected:"One action wins and persists. Losing user receives a conflict or override notification.",change:""},
+  {id:"TC-19",section:"9. Concurrent Action – Race Condition",title:"Rename + Mute same alert simultaneously",priority:"Critical",tag:"",pre:"User-A has the rename dialog open on an alert. User-B is on the same alert.",steps:"1. User-A starts renaming the alert.\n2. Simultaneously, User-B mutes the same alert.\n3. Observe User-A's rename UI.",expected:"User-A's UI reflects the muted state in real time. No data inconsistency.",change:""},
+  {id:"TC-20",section:"9. Concurrent Action – Race Condition",title:"Assign to different bundles simultaneously",priority:"Critical",tag:"",pre:"User-A and User-B both viewing the same alert.",steps:"1. User-A assigns the alert to Bundle-X.\n2. Simultaneously, User-B assigns the same alert to Bundle-Y.\n3. Observe final state on both UIs.",expected:"Only one bundle assignment persists. Both UIs reflect the final winning state.",change:""},
+  // ── SECTION 10 ──
+  {id:"TC-21",section:"10. Bulk / Multi-Select Actions",title:"Bulk Mute – real-time update for other users",priority:"High",tag:"",pre:"User-A and User-B both viewing the inbox.",steps:"1. User-A selects 50 alerts and performs Mute All.\n2. Observe User-B's view.",expected:"All 50 rows update in real time on User-B's view without partial rendering.",change:""},
+  {id:"TC-22",section:"10. Bulk / Multi-Select Actions",title:"Bulk assign conflict with individual action",priority:"High",tag:"",pre:"User-A is performing bulk assign. User-B is individually acting on one of the same alerts.",steps:"1. User-A starts bulk assigning a set of alerts.\n2. User-B simultaneously acts on one alert from that same set.\n3. Observe User-B's UI.",expected:"User-B receives a conflict or override notification. No silent overwrite.",change:""},
+  {id:"TC-23",section:"10. Bulk / Multi-Select Actions",title:"Bulk action with mid-action network drop",priority:"High",tag:"",pre:"User-A is performing bulk action. Network can be toggled.",steps:"1. User-A starts bulk action on multiple alerts.\n2. Drop network midway.\n3. Restore network and observe state for User-A and User-B.",expected:"No partial/inconsistent update state. System either completes or rolls back cleanly.",change:""},
+  // ── SECTION 11 ──
+  {id:"TC-24",section:"11. Category / Filter During Live Updates",title:"New alert auto-inserts into active category",priority:"Medium",tag:"",pre:"User-A is viewing Category-X.",steps:"1. User-B or system creates a new alert belonging to Category-X.\n2. Observe User-A's view.",expected:"New alert auto-inserts into User-A's Category-X view without a refresh.",change:""},
+  {id:"TC-25",section:"11. Category / Filter During Live Updates",title:"Alert removed from filtered view on category change",priority:"Medium",tag:"",pre:"User-A has a category/filter active. Alert belongs to that category.",steps:"1. User-B reassigns the alert to a different category.\n2. Observe User-A's filtered view.",expected:"Alert disappears from User-A's filtered view in real time.",change:""},
+  {id:"TC-26",section:"11. Category / Filter During Live Updates",title:"Row update in place with active filter",priority:"Medium",tag:"",pre:"User-A has a search/filter active. A matching alert is visible.",steps:"1. User-B modifies an alert that matches User-A's active filter.\n2. Observe the row behavior in User-A's view.",expected:"Row updates in place without flickering, re-sorting, or disrupting the filter.",change:""},
+  // ── SECTION 12 ──
+  {id:"TC-27",section:"12. Pagination & Scroll Position",title:"Update on page 1 does not scroll user away from page 2",priority:"Medium",tag:"",pre:"User-A is on page 2 of the inbox table.",steps:"1. A real-time update arrives for a record on page 1.\n2. Observe User-A's scroll/page position.",expected:"User-A stays on page 2. No auto-scroll or page jump occurs.",change:""},
+  {id:"TC-28",section:"12. Pagination & Scroll Position",title:"New alert inserted at top preserves scroll position",priority:"Medium",tag:"",pre:"User-A is scrolled down in the inbox.",steps:"1. A new alert is inserted at the top of the list via real-time update.\n2. Observe User-A's scroll position.",expected:"User-A's scroll position is preserved. No layout jump occurs.",change:""},
+  {id:"TC-29",section:"12. Pagination & Scroll Position",title:"Real-time deletion reflows table gracefully",priority:"Medium",tag:"",pre:"User-A is viewing a page with a full set of rows.",steps:"1. User-B deletes/removes an alert currently visible on User-A's page.\n2. Observe table reflow.",expected:"Table reflows cleanly. No empty rows, broken pagination, or visual glitch.",change:""},
+  // ── SECTION 13 ──
+  {id:"TC-30",section:"13. Context Menu During Live Update",title:"Context menu stable during real-time row update",priority:"High",tag:"",pre:"User-A has a right-click context menu open on an alert.",steps:"1. User-B triggers an update on the same alert.\n2. Observe User-A's context menu.",expected:"Context menu remains open and stable. No flicker or unexpected close.",change:""},
+  {id:"TC-31",section:"13. Context Menu During Live Update",title:"Context menu reflects latest alert state",priority:"High",tag:"",pre:"User-A has context menu open on an alert.",steps:"1. User-B mutes or takes the same alert.\n2. Observe the options/state shown in User-A's open context menu.",expected:"Context menu reflects the latest alert state (e.g., already muted) or shows a stale-state indicator.",change:""},
+  // ── SECTION 14 ──
+  {id:"TC-32",section:"14. Session Expiry During Active Use",title:"Session expires – graceful feed stop",priority:"High",tag:"",pre:"User-A is actively viewing the inbox. Session TTL is short or can be forced.",steps:"1. Force session expiry while User-A is on the inbox.\n2. Observe the real-time feed and UI.",expected:"Real-time feed stops gracefully. UI shows session expired / re-login prompt instead of silently failing.",change:""},
+  {id:"TC-33",section:"14. Session Expiry During Active Use",title:"Re-login after session expiry shows latest state",priority:"High",tag:"",pre:"User-A's session has expired. Updates occurred during expiry.",steps:"1. Re-login as User-A.\n2. Observe inbox state.",expected:"Inbox shows fully up-to-date state. No stale snapshot from before expiry.",change:""},
+  // ── SECTION 15 ──
+  {id:"TC-34",section:"15. Multi-Tab – Different Users",title:"Incognito tab action updates normal tab",priority:"Medium",tag:"",pre:"Tab-1: User-A (normal). Tab-2: User-B (incognito).",steps:"1. User-B performs an action in incognito Tab-2.\n2. Observe Tab-1 (User-A).",expected:"Tab-1 reflects the update in real time.",change:""},
+  {id:"TC-35",section:"15. Multi-Tab – Different Users",title:"Same user – action in one tab updates other tab",priority:"Medium",tag:"",pre:"User-A logged in on two tabs of the same browser.",steps:"1. Perform an action in Tab-1.\n2. Observe Tab-2.",expected:"Tab-2 reflects the change in real time.",change:""},
+  // ── SECTION 16 ──
+  {id:"TC-36",section:"16. Long Idle / Token Refresh",title:"Auth token expiry – feed resumes after re-auth",priority:"High",tag:"",pre:"User-A is idle. Auth token TTL can be simulated (e.g., 1 hour).",steps:"1. Leave browser idle beyond the token TTL.\n2. Return to the inbox.\n3. Observe if the real-time feed re-authenticates and resumes.",expected:"Real-time feed re-authenticates and resumes without a manual refresh.",change:""},
+  {id:"TC-37",section:"16. Long Idle / Token Refresh",title:"Background token refresh does not drop WS subscription",priority:"High",tag:"",pre:"User-A is active. Token auto-refresh is enabled.",steps:"1. Let the token auto-refresh trigger in the background.\n2. Observe WebSocket/Redis subscription continuity.",expected:"WS subscription is maintained. No update gap during the token refresh.",change:""},
+  // ── SECTION 17 ──
+  {id:"TC-41",section:"17. Permission & Role-Based Visibility",title:"Alert assigned to role-restricted bundle disappears for other roles",priority:"High",tag:"",pre:"User-A (admin) and User-B (non-Role-X) both on inbox.",steps:"1. User-A assigns an alert to a bundle visible only to Role-X.\n2. Observe User-B's inbox.",expected:"Alert disappears from User-B's view in real time.",change:""},
+  {id:"TC-42",section:"17. Permission & Role-Based Visibility",title:"Alert assigned to specific user – real-time notification",priority:"High",tag:"",pre:"User-A is on inbox. An alert is about to be assigned to User-A.",steps:"1. Admin assigns an alert specifically to User-A.\n2. Observe User-A's inbox (even if on a different page).",expected:"User-A receives a real-time notification or highlight for the newly assigned alert.",change:""},
+  // ── SECTION 18 (was 19) ──
+  {id:"TC-43",section:"18. Offline → Online Sync",title:"Offline sync – all 6 update types replayed correctly",priority:"Critical",tag:"updated",pre:"User-A (Browser-B) is offline. User-B (Browser-A) is active and will perform all update types.",steps:"1. Disconnect Browser-B (User-A) from internet.\n2. In Browser-A, perform each of the following actions on separate alerts:\n   a. Create a new alert\n   b. Acknowledge an alert\n   c. Mute an alert\n   d. Unmute an alert\n   e. Close an alert\n   f. Categorize an alert\n3. Reconnect Browser-B.\n4. Verify each of the 6 update types is reflected correctly in Browser-B.\n5. No stale data for any action type.",expected:"All 6 update types (create, acknowledge, mute, unmute, close, categorize) are correctly reflected in Browser-B after reconnect via Redis Stream replay. No action type is missing or stale.",change:"Updated: Was too generic ('latest state shown'). Now explicitly covers all 6 update types from the ticket."},
+  {id:"TC-44",section:"18. Offline → Online Sync",title:"Optimistic UI action while offline – sync on reconnect",priority:"High",tag:"",pre:"Optimistic UI is implemented. User-A goes offline.",steps:"1. User-A acts on an alert while offline.\n2. User-B acts on the same alert while User-A is offline.\n3. Reconnect User-A.\n4. Observe final state.",expected:"User-A's action syncs or rolls back correctly based on server state. No silent conflict.",change:""},
+  {id:"TC-45",section:"18. Offline → Online Sync",title:"Two offline users act on same alert – conflict resolution",priority:"High",tag:"",pre:"User-A and User-B both go offline independently.",steps:"1. Both users act on the same alert while offline.\n2. Both come back online.\n3. Observe whose action wins and whether loser is notified.",expected:"One action wins. The losing user is notified of the conflict or override.",change:""},
+  // ── SECTION 19 (was 20) ──
+  {id:"TC-46",section:"19. Browser Visibility API",title:"Tab hidden – updates caught up on return",priority:"Medium",tag:"",pre:"User-A has the inbox open. Tab can be hidden by switching to another tab.",steps:"1. Switch User-A to another browser tab.\n2. Trigger updates via User-B.\n3. Switch back to the SB inbox tab.\n4. Observe inbox.",expected:"Inbox catches up to the latest state instantly on tab focus return.",change:""},
+  {id:"TC-47",section:"19. Browser Visibility API",title:"Background tab – WebSocket/timer not throttled",priority:"Medium",tag:"",pre:"SB inbox is open in a background tab.",steps:"1. Move SB tab to background.\n2. Trigger updates via another user.\n3. Bring SB tab to foreground and observe update timing.",expected:"Updates are not delayed due to browser background throttling. Redis push is unaffected.",change:""},
+  // ── SECTION 20 (was 22) ──
+  {id:"TC-50",section:"20. Server Restart / Deployment",title:"Backend restart – clients auto-reconnect",priority:"Critical",tag:"",pre:"Multiple users active. Backend server can be restarted.",steps:"1. Restart the backend server.\n2. Observe all connected clients.",expected:"Clients auto-reconnect and resume receiving real-time updates without a page reload.",change:""},
+  {id:"TC-51",section:"20. Server Restart / Deployment",title:"Rolling deployment – no update gap or duplicates",priority:"Critical",tag:"",pre:"Zero-downtime rolling deployment can be triggered.",steps:"1. Trigger a rolling deployment while users are active.\n2. Observe update continuity during switchover.",expected:"No update gap or duplicate events during deployment. Users experience no disruption.",change:""},
+  // ── SECTION 21 (was 23) ──
+  {id:"TC-52",section:"21. Data Integrity After Real-Time Update",title:"View History reflects latest real-time action",priority:"High",tag:"",pre:"An alert has just been updated via a real-time event.",steps:"1. Open View History for the updated alert.\n2. Check the history log.",expected:"History log shows the latest action (including who performed it and when) accurately.",change:""},
+  {id:"TC-53",section:"21. Data Integrity After Real-Time Update",title:"Export after bulk real-time update matches live view",priority:"High",tag:"",pre:"Multiple alerts have been updated via real-time events.",steps:"1. Export or print the inbox after bulk real-time updates.\n2. Compare exported data with the live view.",expected:"Exported data matches the live inbox exactly. No stale snapshot in the export.",change:""},
+
+  // ══════════════ NEW TEST CASES ══════════════
+  {id:"TC-54",section:"22. Redis Streams – Event Replay",title:"Client sends correct last event ID on reconnect",priority:"Critical",tag:"new",pre:"User-A was online and receiving events. User-A goes offline. Updates occur. Redis Streams is recording all events.",steps:"1. Note the last event ID received by Browser-B before going offline.\n2. Disconnect Browser-B.\n3. Perform updates in Browser-A.\n4. Reconnect Browser-B.\n5. Inspect network/server logs to verify Browser-B sends the correct last event ID in the reconnect request.\n6. Verify server fetches only events after that ID from Redis Stream.",expected:"Client sends correct last received event ID on reconnect. Server fetches and replays only missed events from that point onwards. No full resync triggered unnecessarily.",change:"NEW – Core of the proposed solution: verifies the event ID handshake between client and Redis Streams."},
+  {id:"TC-55",section:"22. Redis Streams – Event Replay",title:"Redis Stream trimmed – full_resync_required fallback",priority:"Critical",tag:"new",pre:"Redis Stream has been manually trimmed or TTL has expired, removing old events. User-A was offline during that period.",steps:"1. Trim Redis Stream to remove events from the offline period (simulate TTL expiry).\n2. Reconnect User-A (Browser-B).\n3. Observe server response.\n4. Verify server returns full_resync_required.\n5. Verify client falls back to sync/pull.\n6. Verify inbox shows correct final state.",expected:"Server detects that requested event ID is no longer in Redis Stream and returns full_resync_required. Client correctly falls back to sync/pull. Inbox reflects correct state without errors.",change:"NEW – Explicit test for ticket's fallback condition: Redis data trimmed → full_resync_required → sync/pull fallback."},
+  {id:"TC-56",section:"22. Redis Streams – Event Replay",title:"sync/pull filter gap – closed tasks not excluded after reconnect",priority:"Critical",tag:"new",pre:"User-A (Browser-B) is offline with showClosed=false filter active. User-B closes an alert in Browser-A.",steps:"1. Set showClosed=false filter active in Browser-B.\n2. Disconnect Browser-B.\n3. In Browser-A, close an alert that was previously visible in Browser-B.\n4. Reconnect Browser-B.\n5. Verify the closed alert state is reflected in Browser-B.\n6. Verify it was NOT excluded by the showClosed=false filter during replay.",expected:"The closed alert update is replayed via Redis Streams (bypassing sync/pull filters). Alert state correctly reflects 'closed' in Browser-B. The filter gap described in the ticket root cause does NOT silently drop the missed event.",change:"NEW – Directly tests the ticket's root cause: sync/pull filter (showClosed=false) excluding relevant missed updates."},
+  {id:"TC-57",section:"22. Redis Streams – Event Replay",title:"Permission-filtered update not lost via sync/pull fallback",priority:"Critical",tag:"new",pre:"User-A (Browser-B) is offline. A permission-relevant update occurs (e.g., alert assigned to restricted bundle).",steps:"1. Disconnect Browser-B (User-A).\n2. Assign an alert to a bundle that User-A has permission to view.\n3. Reconnect Browser-B.\n4. Verify the assignment update is replayed via Redis Streams.\n5. Verify it was NOT excluded by permission filters in sync/pull fallback path.",expected:"Permission-relevant update is replayed correctly via Redis Streams on reconnect. Event is not silently dropped by sync/pull permission filters. User-A sees the correct assignment.",change:"NEW – Tests ticket root cause: permission filters in sync/pull excluding missed permission-relevant events."},
+  {id:"TC-58",section:"22. Redis Streams – Event Replay",title:"Event replay order correctness – multiple sequential actions",priority:"Critical",tag:"new",pre:"User-A (Browser-B) is offline. Multiple sequential actions performed on same alert.",steps:"1. Disconnect Browser-B.\n2. In Browser-A, perform the following in order on the same alert:\n   a. Mute\n   b. Assign to User-C\n   c. Unmute\n   d. Categorize\n   e. Close\n3. Reconnect Browser-B.\n4. Verify final state of alert in Browser-B.\n5. Verify events were replayed in the correct sequence.",expected:"All 5 events replayed in exact order. Final alert state matches the last action (closed). No out-of-order processing that would lead to wrong final state.",change:"NEW – Verifies Redis Stream event replay ordering, which is critical for correct final state."},
+  {id:"TC-59",section:"22. Redis Streams – Event Replay",title:"No re-delivery of already-received events after reconnect",priority:"High",tag:"new",pre:"User-A receives some real-time events, briefly goes offline, then reconnects.",steps:"1. User-A receives events E1, E2, E3 in real time.\n2. User-A briefly goes offline (events E4, E5 occur).\n3. User-A reconnects.\n4. Verify only E4 and E5 are replayed.\n5. Verify E1, E2, E3 are NOT re-delivered.",expected:"Only truly missed events (E4, E5) are replayed after reconnect. Already-received events (E1–E3) are not re-delivered. No duplicate rows or status flickers.",change:"NEW – Prevents over-replay: client must not re-receive events it already processed."},
+  {id:"TC-60",section:"22. Redis Streams – Event Replay",title:"Redis unavailable at reconnect time – fallback fires",priority:"Critical",tag:"new",pre:"User-A went offline. Updates occurred. Redis goes down BEFORE User-A reconnects.",steps:"1. User-A goes offline.\n2. Perform updates in Browser-A.\n3. Stop Redis server before User-A reconnects.\n4. Reconnect User-A.\n5. Verify server detects Redis unavailability.\n6. Verify full_resync_required is returned.\n7. Verify client falls back to sync/pull.\n8. Verify inbox shows correct state.",expected:"Even when Redis is down at reconnect time, the system gracefully returns full_resync_required and client falls back to sync/pull. Inbox reflects correct state. No crash or blank state.",change:"NEW – Different from TC-12 (Redis down during active use). This tests Redis being down specifically at the moment of reconnect."},
+  {id:"TC-61",section:"22. Redis Streams – Event Replay",title:"All update types stored in Redis Stream (event log completeness)",priority:"High",tag:"new",pre:"Redis Streams is running. All update types can be triggered.",steps:"1. Perform each of the following actions in Browser-A:\n   a. Create alert\n   b. Acknowledge alert\n   c. Mute alert\n   d. Unmute alert\n   e. Close alert\n   f. Categorize alert\n2. Inspect Redis Stream (via Redis CLI or logs).\n3. Verify all 6 event types are present in the stream.",expected:"All 6 update types are correctly logged in Redis Stream. No event type is missing from the stream. Stream entries include event type, alert ID, user ID, and timestamp.",change:"NEW – Verifies that the Redis Stream logging is complete for all action types, not just close events."},
+];
+
+const STATUSES = ["Not Tested","In Progress","Pass","Fail","Blocked"];
+const STATUS_CLASS = {"Not Tested":"s-not","In Progress":"s-progress","Pass":"s-pass","Fail":"s-fail","Blocked":"s-blocked"};
+const PILL_CLASS = {"Not Tested":"pill-not","In Progress":"pill-progress","Pass":"pill-pass","Fail":"pill-fail","Blocked":"pill-blocked"};
+const PRIORITY_COLOR = {"Critical":"#fee2e2","High":"#ffedd5","Medium":"#f0f9ff","Low":"#f1f5f9"};
+const PRIORITY_TEXT = {"Critical":"#b91c1c","High":"#c2410c","Medium":"#0369a1","Low":"#475569"};
+
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem("sb_tc_statuses_v2")||"{}"); } catch(e){}
+const statuses = {};
+TC.forEach(t => statuses[t.id] = saved[t.id] || "Not Tested");
+function saveStatuses(){ localStorage.setItem("sb_tc_statuses_v2", JSON.stringify(statuses)); }
+
+const sections = [...new Set(TC.map(t=>t.section))];
+const secSel = document.getElementById("filterSection");
+sections.forEach(s=>{ const o=document.createElement("option"); o.value=s; o.textContent=s; secSel.appendChild(o); });
+
+function updateSummary(){
+  const counts = {Total:TC.length};
+  STATUSES.forEach(s=>counts[s]=0);
+  Object.values(statuses).forEach(s=>counts[s]=(counts[s]||0)+1);
+  const el = document.getElementById("summary");
+  el.innerHTML = Object.entries(counts).map(([k,v])=>{
+    const cls = k==="Total"?"pill-total":(PILL_CLASS[k]||"pill-not");
+    return `<span class="pill ${cls}">${k}: ${v}</span>`;
+  }).join("");
+}
+
+function renderTable(){
+  const search = document.getElementById("search").value.toLowerCase();
+  const fSec = document.getElementById("filterSection").value;
+  const fStat = document.getElementById("filterStatus").value;
+  const fTag = document.getElementById("filterTag").value;
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  let shown = 0;
+
+  TC.forEach((t)=>{
+    const matchSec = fSec==="All"||t.section===fSec;
+    const matchStat = fStat==="All"||statuses[t.id]===fStat;
+    const matchSearch = !search||t.title.toLowerCase().includes(search)||t.id.toLowerCase().includes(search);
+    const matchTag = fTag==="All"||(fTag==="new"&&t.tag==="new")||(fTag==="updated"&&t.tag==="updated")||(fTag==="critical"&&t.priority==="Critical");
+    if(!matchSec||!matchStat||!matchSearch||!matchTag) return;
+    shown++;
+
+    const isNew = t.tag==="new";
+    const isUpdated = t.tag==="updated";
+
+    const tr = document.createElement("tr");
+    tr.className = "main-row"+(isNew?" new-tc":isUpdated?" updated-tc":"");
+    tr.innerHTML = `
+      <td class="tc-id${isNew?" new":""}">${t.id}${isNew?'<span class="badge badge-new">NEW</span>':isUpdated?'<span class="badge badge-updated">UPDATED</span>':''}</td>
+      <td class="tc-section">${t.section}</td>
+      <td class="tc-title">${t.title}${t.priority==="Critical"?'<span class="badge badge-critical">CRITICAL</span>':''}</td>
+      <td><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${PRIORITY_COLOR[t.priority]};color:${PRIORITY_TEXT[t.priority]}">${t.priority}</span></td>
+      <td><select class="status-select ${STATUS_CLASS[statuses[t.id]]}" data-id="${t.id}" onchange="changeStatus(this)">
+        ${STATUSES.map(s=>`<option${s===statuses[t.id]?" selected":""}>${s}</option>`).join("")}
+      </select></td>
+      <td><button class="btn-detail" data-id="${t.id}" onclick="toggleDetail(this,'detail-${t.id}')">▼ Details</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    const dr = document.createElement("tr");
+    dr.className = "detail-row"+(isNew?" new-detail":isUpdated?" new-detail":"");
+    dr.id = `detail-${t.id}`;
+    dr.innerHTML = `<td colspan="6"><div class="detail-inner">
+      <div><div class="detail-label">📋 Preconditions</div><div class="detail-val">${t.pre}</div></div>
+      <div><div class="detail-label">🔢 Steps</div><div class="detail-val">${t.steps}</div></div>
+      <div><div class="detail-label">✅ Expected Result</div><div class="detail-val">${t.expected}${t.change?`\n\n<span class="${isNew?'new-note':'change-note'}">${isNew?"🆕 ":"✏️ "}${t.change}</span>`:""}</div></div>
+    </div></td>`;
+    tbody.appendChild(dr);
+  });
+
+  document.getElementById("noResults").style.display = shown===0?"block":"none";
+  updateSummary();
+}
+
+function toggleDetail(btn,rowId){
+  const row = document.getElementById(rowId);
+  const open = row.classList.toggle("visible");
+  btn.classList.toggle("open",open);
+  btn.textContent = open?"▲ Hide":"▼ Details";
+}
+
+function changeStatus(sel){
+  const id = sel.dataset.id;
+  statuses[id] = sel.value;
+  sel.className = `status-select ${STATUS_CLASS[sel.value]}`;
+  saveStatuses();
+  updateSummary();
+}
+
+function exportCSV(){
+  const rows=[["ID","Section","Title","Priority","Tag","Preconditions","Steps","Expected Result","Status"]];
+  TC.forEach(t=>rows.push([t.id,t.section,t.title,t.priority,t.tag||"existing",t.pre,t.steps,t.expected,statuses[t.id]]));
+  const csv=rows.map(r=>r.map(c=>`"${(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="SB_Inbox_TestCases_v2.csv";
+  a.click();
+}
+
+renderTable();
+</script>
+</body>
+</html>
